@@ -14,3 +14,5 @@ SIEVE stands for Simpler than LRU: an Efficient Turn-Key Eviction Algorithm. It 
 - 🔁 Lock-free hits for better concurrency
 - 🧼 <20 lines of code change in most cache libraries
 - 🔧 Can be used as a cache primitive to build more advanced eviction policies
+
+Paper from Yazhuo Zhang, Juncheng Yang, Yao Yue, Ymir Vigfusson, K. V. Rashmi https://junchengyang.com/publication/nsdi24-SIEVE.pdf
