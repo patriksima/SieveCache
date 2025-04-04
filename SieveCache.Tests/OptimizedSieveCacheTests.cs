@@ -3,12 +3,12 @@ using Xunit;
 
 namespace SieveCache.Tests;
 
-public class UnsafeSieveCacheTests
+public class OptimizedSieveCacheTests
 {
     [Fact]
     public void Access_AddsItems_AndPreservesOrder()
     {
-        var cache = new UnsafeSieveCache<int>(3);
+        var cache = new OptimizedSieveCache<int>(3);
 
         cache.Access(1);
         cache.Access(2);
@@ -22,7 +22,7 @@ public class UnsafeSieveCacheTests
     [Fact]
     public void Access_MarksExistingItemAsVisited()
     {
-        var cache = new UnsafeSieveCache<int>(3);
+        var cache = new OptimizedSieveCache<int>(3);
 
         cache.Access(1);
         cache.Access(2);
@@ -36,7 +36,7 @@ public class UnsafeSieveCacheTests
     [Fact]
     public void Evict_RemovesUnvisitedItem_WhenCacheIsFull()
     {
-        var cache = new UnsafeSieveCache<int>(2);
+        var cache = new OptimizedSieveCache<int>(2);
 
         cache.Access(1); // unvisited
         cache.Access(2); // unvisited
@@ -51,7 +51,7 @@ public class UnsafeSieveCacheTests
     [Fact]
     public void Evict_SkipsVisitedItems()
     {
-        var cache = new UnsafeSieveCache<int>(2);
+        var cache = new OptimizedSieveCache<int>(2);
 
         cache.Access(1);
         cache.Access(2);
@@ -68,7 +68,7 @@ public class UnsafeSieveCacheTests
     [Fact]
     public void Evict_ResetsVisitedFlag()
     {
-        var cache = new UnsafeSieveCache<int>(2);
+        var cache = new OptimizedSieveCache<int>(2);
 
         cache.Access(1);
         cache.AssertListIsConsistent();

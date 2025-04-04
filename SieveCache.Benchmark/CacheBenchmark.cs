@@ -1,66 +1,49 @@
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Order;
 
 namespace SieveCache;
 
 [MemoryDiagnoser]
+[Orderer(SummaryOrderPolicy.FastestToSlowest)]
+[RankColumn]
 public class CacheBenchmark
 {
-    private UnsafeSieveCache<int> _unsafeSieve = null!;
-    private SieveCache<int> _sieve = null!;
-    private LruCache<int> _lru = null!;
-    private FifoCache<int> _fifo = null!;
-
-    private List<int> _data = null!;
-
     [Params(100, 1000)] public int Capacity;
-
     [Params(1000, 10000)] public int AccessCount;
+
+    private List<int> _randomData = null!;
 
     [GlobalSetup]
     public void Setup()
     {
-        _unsafeSieve = new UnsafeSieveCache<int>(Capacity);
-        _sieve = new SieveCache<int>(Capacity);
-        _lru = new LruCache<int>(Capacity);
-        _fifo = new FifoCache<int>(Capacity);
-
         var rand = new Random(42);
-        _data = Enumerable.Range(0, AccessCount).Select(_ => rand.Next(0, Capacity * 2)).ToList();
+
+        _randomData = Enumerable.Range(0, AccessCount)
+            .Select(_ => rand.Next(0, Capacity * 2))
+            .ToList();
     }
 
-    [Benchmark]
-    public void UnsafeSieveCacheAccess()
-    {
-        foreach (var x in _data)
-        {
-            _unsafeSieve.Access(x);
-        }
-    }
+    // ---------- Performance Benchmarks ----------
 
     [Benchmark]
-    public void SieveCacheAccess()
-    {
-        foreach (var x in _data)
-        {
-            _sieve.Access(x);
-        }
-    }
+    public void OptimizedSieveCache_RandomAccess() => AccessAll(new OptimizedSieveCache<int>(Capacity), _randomData);
 
     [Benchmark]
-    public void LruCacheAccess()
-    {
-        foreach (var x in _data)
-        {
-            _lru.Access(x);
-        }
-    }
+    public void SieveCache_RandomAccess() => AccessAll(new SieveCache<int>(Capacity), _randomData);
 
     [Benchmark]
-    public void FifoCacheAccess()
+    public void LruCache_RandomAccess() => AccessAll(new LruCache<int>(Capacity), _randomData);
+
+    [Benchmark]
+    public void FifoCache_RandomAccess() => AccessAll(new FifoCache<int>(Capacity), _randomData);
+
+    // ---------- Helpers ----------
+
+    private static void AccessAll(ICache<int> cache, List<int> data)
     {
-        foreach (var x in _data)
+        foreach (var x in data)
         {
-            _fifo.Access(x);
+            cache.Access(x);
         }
     }
 }

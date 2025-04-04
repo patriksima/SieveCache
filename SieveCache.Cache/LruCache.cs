@@ -1,6 +1,6 @@
 ﻿namespace SieveCache;
 
-public class LruCache<T>(int capacity) where T : notnull
+public class LruCache<T>(int capacity) : ICache<T> where T : notnull
 {
     private readonly Dictionary<T, LinkedListNode<T>> _cache = new();
     private readonly LinkedList<T> _order = [];
@@ -25,5 +25,10 @@ public class LruCache<T>(int capacity) where T : notnull
             _order.AddFirst(newNode);
             _cache[item] = newNode;
         }
+    }
+
+    public bool Contains(T item)
+    {
+        return _cache.ContainsKey(item);
     }
 }

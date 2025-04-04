@@ -1,8 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿namespace SieveCache;
 
-namespace SieveCache;
-
-public class SieveCache<T>(int capacity)
+public class SieveCache<T>(int capacity) : ICache<T>
     where T : notnull
 {
     private readonly Dictionary<T, Node<T>?> _cache = new(capacity);
@@ -59,7 +57,6 @@ public class SieveCache<T>(int capacity)
 
         if (node == null) return;
 
-        //_cache.TryRemove(node.Value, out _);
         _cache.Remove(node.Value);
         RemoveNode(node);
         _size--;
@@ -88,7 +85,12 @@ public class SieveCache<T>(int capacity)
             newNode.Visited = false;
         }
     }
-    
+
+    public bool Contains(T item)
+    {
+        return _cache.ContainsKey(item);
+    }
+
     internal List<(T Value, bool Visited)> GetCacheContents()
     {
         var result = new List<(T, bool)>();
@@ -98,6 +100,7 @@ public class SieveCache<T>(int capacity)
             result.Add((current.Value, current.Visited));
             current = current.Next;
         }
+
         return result;
     }
 }
