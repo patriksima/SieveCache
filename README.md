@@ -49,3 +49,16 @@ cache.Put("d", "dragonfruit"); // evicts the first unvisited item
 bool exists = cache.Contains("b"); // true or false depending on eviction
 int currentCount = cache.Count;
 ```
+
+## Benchmark
+
+| Method                  | Capacity | AccessCount | Mean      | Error    | StdDev   | Rank | Gen0    | Gen1    | Allocated |
+|------------------------ |--------- |------------ |----------:|---------:|---------:|-----:|--------:|--------:|----------:|
+| SieveCache_RandomAccess | 100      | 1000        |  46.88 us | 0.925 us | 1.467 us |    1 |  5.9814 |  0.4883 |  36.91 KB |
+| LruCache_RandomAccess   | 100      | 1000        |  63.42 us | 0.637 us | 0.596 us |    2 |  3.4180 |  0.1221 |  21.23 KB |
+| SieveCache_RandomAccess | 100      | 10000       | 431.11 us | 4.972 us | 4.650 us |    4 | 26.3672 |  1.9531 | 162.54 KB |
+| LruCache_RandomAccess   | 100      | 10000       | 640.76 us | 4.459 us | 3.723 us |    6 | 15.6250 |       - | 101.46 KB |
+| SieveCache_RandomAccess | 1000     | 1000        |  65.64 us | 1.302 us | 1.948 us |    2 | 18.0664 |  3.6621 | 111.25 KB |
+| LruCache_RandomAccess   | 1000     | 1000        |  73.17 us | 0.992 us | 0.928 us |    3 |  7.0801 |  0.8545 |  43.68 KB |
+| SieveCache_RandomAccess | 1000     | 10000       | 482.33 us | 5.456 us | 5.104 us |    5 | 50.2930 | 22.9492 | 308.93 KB |
+| LruCache_RandomAccess   | 1000     | 10000       | 710.96 us | 4.457 us | 4.169 us |    7 | 30.2734 | 10.7422 | 190.56 KB |
