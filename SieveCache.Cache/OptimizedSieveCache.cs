@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace SieveCache;
-
+/*
 public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
 {
     private readonly int _capacity;
@@ -198,4 +198,4 @@ public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
         _pool.Return(_array);
         GC.SuppressFinalize(this);
     }
-}
+}*/

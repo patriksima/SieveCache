@@ -18,3 +18,34 @@ SIEVE stands for Simpler than LRU: an Efficient Turn-Key Eviction Algorithm. It 
 Paper from Yazhuo Zhang, Juncheng Yang, Yao Yue, Ymir Vigfusson, K. V. Rashmi https://junchengyang.com/publication/nsdi24-SIEVE.pdf
 
 https://cachemon.github.io/SIEVE-website/
+
+## Interface
+
+```csharp
+public interface ICache<TKey, TValue>
+    where TKey : notnull
+{
+    TValue? Get(TKey key);
+    void Put(TKey key, TValue value);
+    bool Contains(TKey key);
+    void Clear();
+    int Count { get; }
+}
+```
+
+## Usage example
+
+```csharp
+var cache = new SieveCache<string, string>(capacity: 3);
+
+cache.Put("a", "apple");
+cache.Put("b", "banana");
+cache.Put("c", "coconut");
+
+var result = cache.Get("a"); // "apple" – marks it as visited
+
+cache.Put("d", "dragonfruit"); // evicts the first unvisited item
+
+bool exists = cache.Contains("b"); // true or false depending on eviction
+int currentCount = cache.Count;
+```

@@ -1,34 +1,92 @@
-﻿namespace SieveCache;
+﻿using System.Collections.Concurrent;
 
-public class LruCache<T>(int capacity) : ICache<T> where T : notnull
+namespace SieveCache;
+
+public class LruCache<TKey, TValue>(int capacity) : ICache<TKey, TValue>
+    where TKey : notnull
 {
-    private readonly Dictionary<T, LinkedListNode<T>> _cache = new();
-    private readonly LinkedList<T> _order = [];
+    private readonly Dictionary<TKey, LinkedListNode<(TKey Key, TValue Value)>> _cache = new();
+    private readonly LinkedList<(TKey Key, TValue Value)> _order = [];
+    private readonly Lock _syncRoot = new();
 
-    public void Access(T item)
+    public TValue? Get(TKey key)
     {
-        if (_cache.TryGetValue(item, out var node))
+        lock (_syncRoot)
         {
-            _order.Remove(node);
-            _order.AddFirst(node);
-        }
-        else
-        {
-            if (_cache.Count == capacity)
+            if (_cache.TryGetValue(key, out var node))
             {
-                var last = _order.Last!;
-                _cache.Remove(last.Value);
-                _order.RemoveLast();
+                // Move to front (most recently used)
+
+                _order.Remove(node);
+                _order.AddFirst(node);
+
+
+                return node.Value.Value;
             }
 
-            var newNode = new LinkedListNode<T>(item);
-            _order.AddFirst(newNode);
-            _cache[item] = newNode;
+            return default;
         }
     }
 
-    public bool Contains(T item)
+    public void Put(TKey key, TValue value)
     {
-        return _cache.ContainsKey(item);
+        lock (_syncRoot)
+        {
+            if (_cache.TryGetValue(key, out var existingNode))
+            {
+                // Update value and move to front
+                _order.Remove(existingNode);
+            }
+            else if (_cache.Count == capacity)
+            {
+                // Remove least recently used
+                var lastNode = _order.Last!;
+                _order.RemoveLast();
+                _cache.Remove(lastNode.Value.Key, out _);
+            }
+
+            var newNode = new LinkedListNode<(TKey, TValue)>((key, value));
+
+            _order.AddFirst(newNode);
+
+            _cache[key] = newNode;
+        }
+    }
+
+    public bool Contains(TKey key)
+    {
+        lock (_syncRoot)
+        {
+            return _cache.ContainsKey(key);
+        }
+    }
+
+    public void Clear()
+    {
+        lock (_syncRoot)
+        {
+            _order.Clear();
+            _cache.Clear();
+        }
+    }
+
+    public int Count
+    {
+        get
+        {
+            lock (_syncRoot)
+            {
+                return _cache.Count;
+            }
+        }
+    }
+
+    // Pro testování/debug
+    internal List<TKey> GetCacheKeysInOrder()
+    {
+        lock (_syncRoot)
+        {
+            return _order.Select(entry => entry.Key).ToList();
+        }
     }
 }

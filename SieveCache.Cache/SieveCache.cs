@@ -1,15 +1,17 @@
-﻿namespace SieveCache;
+﻿using System.Collections.Concurrent;
 
-public class SieveCache<T>(int capacity) : ICache<T>
-    where T : notnull
+namespace SieveCache;
+
+public class SieveCache<TKey, TValue>(int capacity) : ICache<TKey, TValue>
+    where TKey : notnull
 {
-    private readonly Dictionary<T, Node<T>?> _cache = new(capacity);
-    private Node<T>? _head;
-    private Node<T>? _tail;
-    private Node<T>? _hand;
+    private readonly ConcurrentDictionary<TKey, Node<TKey, TValue>?> _cache = new();
+    private Node<TKey, TValue>? _head;
+    private Node<TKey, TValue>? _tail;
+    private Node<TKey, TValue>? _hand;
     private int _size;
 
-    private void AddToHead(Node<T> node)
+    private void AddToHead(Node<TKey, TValue> node)
     {
         node.Next = _head;
         node.Prev = null!;
@@ -23,7 +25,7 @@ public class SieveCache<T>(int capacity) : ICache<T>
         _tail ??= node;
     }
 
-    private void RemoveNode(Node<T> node)
+    private void RemoveNode(Node<TKey, TValue> node)
     {
         if (node.Prev is not null)
         {
@@ -57,18 +59,35 @@ public class SieveCache<T>(int capacity) : ICache<T>
 
         if (node == null) return;
 
-        _cache.Remove(node.Value);
+        _cache.Remove(node.Key,  out _);
         RemoveNode(node);
         _size--;
     }
 
-    public void Access(T value)
+    public TValue? Get(TKey key)
     {
-        if (_cache.TryGetValue(value, out var node))
+        if (!_cache.TryGetValue(key, out var node) || node is null)
         {
-            if (node is not null)
+            return default;
+        }
+        
+        node.Visited = true;
+        
+        return node.Value;
+    }
+
+    public void Put(TKey key, TValue value)
+    {
+        if (_cache.TryGetValue(key, out var node))
+        {
+            if (node is not null && value is not null)
             {
                 node.Visited = true;
+
+                if (!value.Equals(node.Value))
+                {
+                    node.Value = value;
+                }
             }
         }
         else
@@ -78,26 +97,39 @@ public class SieveCache<T>(int capacity) : ICache<T>
                 Evict();
             }
 
-            var newNode = new Node<T>(value);
+            var newNode = new Node<TKey, TValue>(key, value)
+            {
+                Visited = false
+            };
             AddToHead(newNode);
-            _cache[value] = newNode;
+            _cache[key] = newNode;
             _size++;
-            newNode.Visited = false;
         }
     }
 
-    public bool Contains(T item)
+    public bool Contains(TKey key)
     {
-        return _cache.ContainsKey(item);
+        return _cache.ContainsKey(key);
     }
 
-    internal List<(T Value, bool Visited)> GetCacheContents()
+    public void Clear()
     {
-        var result = new List<(T, bool)>();
+        _cache.Clear();
+        _head = null;
+        _tail = null;
+        _hand = null;
+        _size = 0;
+    }
+
+    public int Count => _cache.Count;
+
+    internal List<(TKey Key, TValue Value, bool Visited)> GetCacheContents()
+    {
+        var result = new List<(TKey, TValue, bool)>();
         var current = _head;
         while (current is not null)
         {
-            result.Add((current.Value, current.Visited));
+            result.Add((current.Key, current.Value, current.Visited));
             current = current.Next;
         }
 

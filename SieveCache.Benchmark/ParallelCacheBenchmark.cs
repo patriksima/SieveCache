@@ -1,13 +1,14 @@
-using BenchmarkDotNet.Attributes;
+﻿using BenchmarkDotNet.Attributes;
 
 namespace SieveCache;
 
 [MemoryDiagnoser]
 [RankColumn]
-public class CacheBenchmark
+public class ParallelCacheBenchmark
 {
     [Params(100, 1000)] public int Capacity;
     [Params(1000, 10000)] public int AccessCount;
+    [Params(4, 8)] public int ThreadCount;
 
     private List<string> _randomData = null!;
 
@@ -18,24 +19,45 @@ public class CacheBenchmark
     }
 
     [Benchmark]
-    public void SieveCache_RandomAccess() => AccessAll(new SieveCache<string, string>(Capacity), _randomData);
+    public void SieveCache_ParallelAccess()
+    {
+        var cache = new SieveCache<string, string>(Capacity);
+
+        Parallel.ForEach(
+            _randomData,
+            new ParallelOptions { MaxDegreeOfParallelism = ThreadCount },
+            key =>
+            {
+                if (!cache.Contains(key))
+                {
+                    cache.Put(key, key);
+                }
+                else
+                {
+                    _ = cache.Get(key);
+                }
+            });
+    }
 
     [Benchmark]
-    public void LruCache_RandomAccess() => AccessAll(new LruCache<string, string>(Capacity), _randomData);
-
-    private static void AccessAll(ICache<string, string> cache, List<string> data)
+    public void LruCache_ParallelAccess()
     {
-        foreach (var key in data)
-        {
-            if (!cache.Contains(key))
+        var cache = new LruCache<string, string>(Capacity);
+
+        Parallel.ForEach(
+            _randomData,
+            new ParallelOptions { MaxDegreeOfParallelism = ThreadCount },
+            key =>
             {
-                cache.Put(key, key);
-            }
-            else
-            {
-                cache.Get(key);
-            }
-        }
+                if (!cache.Contains(key))
+                {
+                    cache.Put(key, key);
+                }
+                else
+                {
+                    _ = cache.Get(key);
+                }
+            });
     }
 
     private static List<string> GenerateZipfStrings(int uniqueKeyCount, int totalSamples, double exponent = 1.0)

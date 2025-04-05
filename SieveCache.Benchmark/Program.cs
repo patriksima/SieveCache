@@ -2,3 +2,4 @@
 using SieveCache;
 
 BenchmarkRunner.Run<CacheBenchmark>();
+BenchmarkRunner.Run<ParallelCacheBenchmark>();

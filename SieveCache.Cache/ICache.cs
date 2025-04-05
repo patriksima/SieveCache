@@ -1,7 +1,11 @@
 ﻿namespace SieveCache;
 
-public interface ICache<in T>
+public interface ICache<TKey, TValue>
+    where TKey : notnull
 {
-    void Access(T item);
-    bool Contains(T item);
-} 
+    TValue? Get(TKey key);
+    void Put(TKey key, TValue value);
+    bool Contains(TKey key);
+    void Clear();
+    int Count { get; }
+}

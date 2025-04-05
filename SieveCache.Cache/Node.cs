@@ -1,9 +1,10 @@
 ﻿namespace SieveCache;
 
-public class Node<T>(T value)
+public class Node<TKey, TValue>(TKey key, TValue value)
 {
-    public T Value { get; set; } = value;
+    public TKey Key { get; } = key;
+    public TValue Value { get; set; } = value;
     public bool Visited { get; set; }
-    public Node<T>? Prev { get; set; }
-    public Node<T>? Next { get; set; }
+    public Node<TKey, TValue>? Prev { get; set; }
+    public Node<TKey, TValue>? Next { get; set; }
 }

@@ -1,5 +1,5 @@
 ﻿namespace SieveCache;
-
+/*
 public class FifoCache<T>(int capacity) : ICache<T>
 {
     private readonly Queue<T> _queue = new();
@@ -23,4 +23,4 @@ public class FifoCache<T>(int capacity) : ICache<T>
     {
         return _set.Contains(item);
     }
-}
+}*/
