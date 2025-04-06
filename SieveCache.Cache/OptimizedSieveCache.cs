@@ -3,11 +3,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace SieveCache;
-/*
-public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
+
+public class OptimizedSieveCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TKey : notnull
 {
     private readonly int _capacity;
-    private readonly Dictionary<T, int> _lookup;
+    private readonly Dictionary<TKey, int> _lookup;
     private readonly Stack<int> _freeIndexes;
     private readonly Node[] _array;
     private readonly ArrayPool<Node> _pool;
@@ -20,7 +20,7 @@ public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
     public OptimizedSieveCache(int capacity)
     {
         _capacity = capacity;
-        _lookup = new Dictionary<T, int>(capacity);
+        _lookup = new Dictionary<TKey, int>(capacity);
         _freeIndexes = new Stack<int>(capacity);
         _pool = ArrayPool<Node>.Shared;
         _array = _pool.Rent(capacity);
@@ -31,9 +31,10 @@ public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
         }
     }
 
-    private struct Node
+    private struct Node(TKey key, TValue value)
     {
-        public T Value;
+        public TKey Key = key;
+        public TValue Value = value;
         public bool Visited;
         public int Prev;
         public int Next;
@@ -103,10 +104,10 @@ public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
 
         if (index == -1) return;
 
-        var value = GetNode(index).Value;
+        var key = GetNode(index).Key;
 
         RemoveNode(index);
-        _lookup.Remove(value);
+        _lookup.Remove(key);
 
         ref var node = ref GetNode(index);
         node = default;
@@ -116,77 +117,90 @@ public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
         _size--;
     }
 
-    public void Access(T value)
+    public TValue? Get(TKey key)
     {
-        if (_lookup.TryGetValue(value, out var index))
+        if (!_lookup.TryGetValue(key, out var index) || index == -1)
         {
-            GetNode(index).Visited = true;
-            return;
+            return default;
         }
 
-        if (_size == _capacity)
+        ref var node = ref GetNode(index);
+
+        node.Visited = true;
+
+        return node.Value;
+    }
+
+    public void Put(TKey key, TValue value)
+    {
+        if (_lookup.TryGetValue(key, out var index))
         {
-            Evict();
+            ref var node = ref GetNode(index);
+            node.Visited = true;
+
+            if (!EqualityComparer<TValue>.Default.Equals(value, node.Value))
+            {
+                node.Value = value;
+            }
         }
+        else
+        {
+            if (_size == _capacity)
+            {
+                Evict();
+            }
 
-        var i = _freeIndexes.Pop();
-        ref var node = ref GetNode(i);
+            var freeIndex = _freeIndexes.Pop();
+            ref var node = ref GetNode(freeIndex);
 
-        node.Value = value;
-        node.Visited = false;
-        node.Prev = -1;
-        node.Next = -1;
+            node.Key = key;
+            node.Value = value;
+            node.Visited = false;
+            node.Prev = -1;
+            node.Next = -1;
 
-        AddToHead(i);
-        _lookup[value] = i;
-        _size++;
+            AddToHead(freeIndex);
+            _lookup[key] = freeIndex;
+            _size++;
+        }
     }
 
-    public bool Contains(T item)
+    public bool Contains(TKey key)
     {
-        return _lookup.ContainsKey(item);
+        return _lookup.ContainsKey(key);
     }
 
-    internal List<(T Value, bool Visited)> GetCacheContents()
+    public void Clear()
     {
-        var result = new List<(T, bool)>();
+        _lookup.Clear();
+        _freeIndexes.Clear();
+        _hand = -1;
+        _head = -1;
+        _tail = -1;
+        _size = 0;
+
+        for (var i = _capacity - 1; i >= 0; i--)
+        {
+            _freeIndexes.Push(i);
+        }
+    }
+
+
+    internal List<(TKey Key, TValue Value, bool Visited)> GetCacheContents()
+    {
+        var result = new List<(TKey, TValue, bool)>();
         var index = _head;
         while (index != -1)
         {
             ref var node = ref GetNode(index);
-            result.Add((node.Value, node.Visited));
+            result.Add((node.Key, node.Value, node.Visited));
             index = node.Next;
         }
 
         return result;
     }
 
-    internal void AssertListIsConsistent()
-    {
-        var seen = new HashSet<int>();
-        var index = _head;
-        var prev = -1;
-
-        while (index != -1)
-        {
-            if (!seen.Add(index))
-                throw new Exception($"Cycle detected at index {index}");
-
-            ref var node = ref GetNode(index);
-
-            if (index == node.Next)
-                throw new Exception($"Node[{index}] points to itself via Next");
-
-            if (index == node.Prev)
-                throw new Exception($"Node[{index}] points to itself via Prev");
-
-            if (node.Prev != prev)
-                throw new Exception($"Broken Prev linkage at index {index}");
-
-            prev = index;
-            index = node.Next;
-        }
-    }
+    public int Count => _size;
 
     ~OptimizedSieveCache()
     {
@@ -198,4 +212,4 @@ public class OptimizedSieveCache<T> : IDisposable, ICache<T> where T : notnull
         _pool.Return(_array);
         GC.SuppressFinalize(this);
     }
-}*/
+}

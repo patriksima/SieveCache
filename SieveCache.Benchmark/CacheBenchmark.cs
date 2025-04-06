@@ -18,6 +18,9 @@ public class CacheBenchmark
     }
 
     [Benchmark]
+    public void OptimizedSieveCache_RandomAccess() => AccessAll(new OptimizedSieveCache<string, string>(Capacity), _randomData);
+
+    [Benchmark]
     public void SieveCache_RandomAccess() => AccessAll(new SieveCache<string, string>(Capacity), _randomData);
 
     [Benchmark]
