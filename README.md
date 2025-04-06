@@ -71,13 +71,17 @@ If you need thread safety:
 
 ## Benchmark
 
-| Method                  | Capacity | AccessCount | Mean      | Error    | StdDev   | Rank | Gen0    | Gen1    | Allocated |
-|------------------------ |--------- |------------ |----------:|---------:|---------:|-----:|--------:|--------:|----------:|
-| SieveCache_RandomAccess | 100      | 1000        |  46.88 us | 0.925 us | 1.467 us |    1 |  5.9814 |  0.4883 |  36.91 KB |
-| LruCache_RandomAccess   | 100      | 1000        |  63.42 us | 0.637 us | 0.596 us |    2 |  3.4180 |  0.1221 |  21.23 KB |
-| SieveCache_RandomAccess | 100      | 10000       | 431.11 us | 4.972 us | 4.650 us |    4 | 26.3672 |  1.9531 | 162.54 KB |
-| LruCache_RandomAccess   | 100      | 10000       | 640.76 us | 4.459 us | 3.723 us |    6 | 15.6250 |       - | 101.46 KB |
-| SieveCache_RandomAccess | 1000     | 1000        |  65.64 us | 1.302 us | 1.948 us |    2 | 18.0664 |  3.6621 | 111.25 KB |
-| LruCache_RandomAccess   | 1000     | 1000        |  73.17 us | 0.992 us | 0.928 us |    3 |  7.0801 |  0.8545 |  43.68 KB |
-| SieveCache_RandomAccess | 1000     | 10000       | 482.33 us | 5.456 us | 5.104 us |    5 | 50.2930 | 22.9492 | 308.93 KB |
-| LruCache_RandomAccess   | 1000     | 10000       | 710.96 us | 4.457 us | 4.169 us |    7 | 30.2734 | 10.7422 | 190.56 KB |
+| Method                           | Capacity | AccessCount | Mean      | Error     | StdDev   | Rank | Gen0    | Gen1    | Gen2   | Allocated |
+|--------------------------------- |--------- |------------ |----------:|----------:|---------:|-----:|--------:|--------:|-------:|----------:|
+| OptimizedSieveCache_RandomAccess | 100      | 1000        |  37.94 us |  1.509 us | 0.234 us |    1 |  1.0376 |  0.9766 | 0.9155 |   6.44 KB |
+| SieveCache_RandomAccess          | 100      | 1000        |  36.69 us |  2.485 us | 0.645 us |    1 |  2.2583 |  0.0610 |      - |  14.16 KB |
+| LruCache_RandomAccess            | 100      | 1000        |  46.95 us |  3.923 us | 1.019 us |    1 |  3.4180 |  0.1221 |      - |  21.19 KB |
+| OptimizedSieveCache_RandomAccess | 100      | 10000       | 383.27 us | 13.831 us | 3.592 us |    2 |  0.9766 |  0.4883 |      - |   6.27 KB |
+| SieveCache_RandomAccess          | 100      | 10000       | 392.33 us |  8.601 us | 1.331 us |    2 | 13.1836 |  0.4883 |      - |   81.8 KB |
+| LruCache_RandomAccess            | 100      | 10000       | 479.38 us | 21.386 us | 5.554 us |    2 | 16.1133 |  0.4883 |      - | 101.41 KB |
+| OptimizedSieveCache_RandomAccess | 1000     | 1000        |  43.33 us |  1.218 us | 0.316 us |    1 |  5.5542 |  5.4932 | 0.0610 |  34.32 KB |
+| SieveCache_RandomAccess          | 1000     | 1000        |  36.42 us |  3.951 us | 1.026 us |    1 |  8.4229 |  1.3428 |      - |  52.11 KB |
+| LruCache_RandomAccess            | 1000     | 1000        |  52.71 us |  1.616 us | 0.250 us |    1 |  7.0801 |  0.8545 |      - |  43.63 KB |
+| OptimizedSieveCache_RandomAccess | 1000     | 10000       | 419.91 us | 18.669 us | 4.848 us |    2 |  5.3711 |  4.8828 |      - |  34.34 KB |
+| SieveCache_RandomAccess          | 1000     | 10000       | 422.31 us |  9.058 us | 2.352 us |    2 | 19.5313 |  4.8828 |      - | 120.25 KB |
+| LruCache_RandomAccess            | 1000     | 10000       | 515.71 us | 18.739 us | 4.866 us |    2 | 30.2734 | 10.7422 |      - | 190.52 KB |
