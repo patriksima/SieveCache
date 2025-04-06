@@ -19,13 +19,29 @@ public class CacheBenchmark
     }
 
     [Benchmark]
-    public void OptimizedSieveCache_RandomAccess() => AccessAll(new OptimizedSieveCache<string, string>(Capacity), _randomData);
+    public async Task AsyncSieveCache_RandomAccess() => await AccessAll(new SieveCacheActor<string, string>(Capacity), _randomData);
+
+    //[Benchmark] public void OptimizedSieveCache_RandomAccess() => AccessAll(new OptimizedSieveCache<string, string>(Capacity), _randomData);
 
     [Benchmark]
     public void SieveCache_RandomAccess() => AccessAll(new SieveCache<string, string>(Capacity), _randomData);
 
-    [Benchmark]
-    public void LruCache_RandomAccess() => AccessAll(new LruCache<string, string>(Capacity), _randomData);
+    //[Benchmark] public void LruCache_RandomAccess() => AccessAll(new LruCache<string, string>(Capacity), _randomData);
+
+    private static async Task AccessAll(IAsyncCache<string, string> cache, List<string> data)
+    {
+        await Parallel.ForEachAsync(data, async (key, token) =>
+        {
+            if (!await cache.ContainsAsync(key))
+            {
+                await cache.PutAsync(key, key);
+            }
+            else
+            {
+                await cache.GetAsync(key);
+            }
+        });
+    }
 
     private static void AccessAll(ICache<string, string> cache, List<string> data)
     {

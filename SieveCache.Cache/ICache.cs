@@ -1,6 +1,6 @@
 ﻿namespace SieveCache;
 
-public interface ICache<TKey, TValue>
+public interface ICache<in TKey, TValue>
     where TKey : notnull
 {
     TValue? Get(TKey key);
