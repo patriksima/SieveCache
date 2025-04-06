@@ -4,6 +4,7 @@ namespace SieveCache;
 
 [MemoryDiagnoser]
 [RankColumn]
+[SimpleJob(launchCount: 1, warmupCount: 3, iterationCount: 5)]
 public class CacheBenchmark
 {
     [Params(100, 1000)] public int Capacity;
