@@ -28,5 +28,5 @@ jobs:
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
-          path: SieveCache.Benchmark/bin/Release/net9.0/BenchmarkDotNet.Artifacts/results/
+          name: BenchmarkDotNet.Artifacts
+          path: ./BenchmarkDotNet.Artifacts
