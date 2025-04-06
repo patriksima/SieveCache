@@ -50,6 +50,25 @@ bool exists = cache.Contains("b"); // true or false depending on eviction
 int currentCount = cache.Count;
 ```
 
+## 🛑 Thread Safety
+⚠️ This implementation of SieveCache is not thread-safe.
+
+- It is intended for single-threaded scenarios or environments where access is externally synchronized.
+- Internally, SieveCache manages a linked structure (Next, Prev, Visited, etc.) without locking, for maximum performance.
+- If you use it concurrently from multiple threads, you may encounter race conditions, such as:
+  - NullReferenceException
+  - corruption of the internal node list
+  - incorrect eviction behavior
+
+### Why?
+Locking would significantly degrade performance — which contradicts the goals of SieveCache as presented in academic research papers, where minimal or no locking is a key advantage.
+
+If you need thread safety:
+- Use external synchronization (e.g. lock in your application)
+- Or wrap SieveCache with your own concurrent-safe wrapper
+- Or use a different cache strategy (e.g. MemoryCache, sharded/segment-based caches)
+- Or implement lock mechanism on your own
+
 ## Benchmark
 
 | Method                  | Capacity | AccessCount | Mean      | Error    | StdDev   | Rank | Gen0    | Gen1    | Allocated |

@@ -5,7 +5,7 @@ namespace SieveCache;
 public class SieveCache<TKey, TValue>(int capacity) : ICache<TKey, TValue>
     where TKey : notnull
 {
-    private readonly ConcurrentDictionary<TKey, Node<TKey, TValue>?> _cache = new();
+    private readonly Dictionary<TKey, Node<TKey, TValue>?> _cache = new(capacity);
     private Node<TKey, TValue>? _head;
     private Node<TKey, TValue>? _tail;
     private Node<TKey, TValue>? _hand;
@@ -59,7 +59,7 @@ public class SieveCache<TKey, TValue>(int capacity) : ICache<TKey, TValue>
 
         if (node == null) return;
 
-        _cache.Remove(node.Key,  out _);
+        _cache.Remove(node.Key, out _);
         RemoveNode(node);
         _size--;
     }
@@ -70,9 +70,9 @@ public class SieveCache<TKey, TValue>(int capacity) : ICache<TKey, TValue>
         {
             return default;
         }
-        
+
         node.Visited = true;
-        
+
         return node.Value;
     }
 
