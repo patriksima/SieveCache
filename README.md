@@ -50,24 +50,57 @@ bool exists = cache.Contains("b"); // true or false depending on eviction
 int currentCount = cache.Count;
 ```
 
-## 🛑 Thread Safety
-⚠️ This implementation of SieveCache is not thread-safe.
+## 🧩 Implementations
 
-- It is intended for single-threaded scenarios or environments where access is externally synchronized.
-- Internally, SieveCache manages a linked structure (Next, Prev, Visited, etc.) without locking, for maximum performance.
-- If you use it concurrently from multiple threads, you may encounter race conditions, such as:
-  - NullReferenceException
-  - corruption of the internal node list
-  - incorrect eviction behavior
+This repository ships several implementations of the same SIEVE algorithm, at different points on the simplicity / performance / concurrency spectrum:
 
-### Why?
-Locking would significantly degrade performance — which contradicts the goals of SieveCache as presented in academic research papers, where minimal or no locking is a key advantage.
+| Cache | Thread-safe | Allocations | Best for |
+|-------------------------------------|:-----------:|:-----------:|----------|
+| `SieveCache<TKey, TValue>`          | No          | Node per entry | Single-threaded reference implementation |
+| `OptimizedSieveCache<TKey, TValue>` | No          | Allocation-free (pooled struct nodes) | Single-threaded, allocation-sensitive |
+| `ShardedSieveCache<TKey, TValue>`   | **Yes**     | Node per entry | Concurrent access from many threads |
 
-If you need thread safety:
-- Use external synchronization (e.g. lock in your application)
-- Or wrap SieveCache with your own concurrent-safe wrapper
-- Or use a different cache strategy (e.g. MemoryCache, sharded/segment-based caches)
-- Or implement lock mechanism on your own
+## 🔒 Thread Safety
+
+### Single-threaded caches
+`SieveCache` and `OptimizedSieveCache` are **not thread-safe** by design. They manage a linked structure (`Next`, `Prev`, `Visited`, …) without locking, for maximum single-threaded performance. Using them concurrently can cause `NullReferenceException`, corruption of the internal node list, or incorrect eviction. If you need thread safety, either synchronize access externally or use `ShardedSieveCache`.
+
+### ShardedSieveCache — thread-safe and scalable
+
+`ShardedSieveCache` is a thread-safe SIEVE cache designed for concurrent workloads (a Redis-like "one cache, many threads" scenario — but in-process, with no network or command-queue overhead).
+
+**Design**
+
+- **Lock striping.** The keyspace is partitioned across independent shards, each with its own lock and SIEVE list, so writes to different shards never contend. This is the same technique used by Memcached and .NET's `ConcurrentDictionary`.
+- **Lock-free reads.** SIEVE's core advantage is that a cache hit only needs to set a `Visited` flag — it never reorders the list. `Get` therefore takes no lock: it does a lock-free `ConcurrentDictionary` lookup and flips a volatile flag. Structural mutations (`Put`, eviction, `Clear`) take the per-shard lock.
+- **Bounded size.** The shard count is a power of two, capped at the capacity and the core count, and capacity is distributed exactly across shards, so the total size never exceeds the requested capacity.
+
+**Usage**
+
+```csharp
+var cache = new ShardedSieveCache<string, string>(capacity: 10_000);
+
+// safe to call concurrently from any number of threads
+cache.Put("a", "apple");
+var value = cache.Get("a");
+bool exists = cache.Contains("a");
+
+// optionally pin the shard count (defaults to a power of two around the core count)
+var tuned = new ShardedSieveCache<string, string>(capacity: 10_000, shardCount: 16);
+```
+
+**Scaling**
+
+Because the write lock in a single global cache serializes every write, a globally-locked SIEVE cache stops scaling after a couple of threads. `ShardedSieveCache` distributes both the lock and the list, so throughput scales with the thread count. Indicative throughput on an 8-core machine (capacity 1000, Zipf workload, 5% writes), against a single globally-locked SIEVE cache:
+
+| Threads | Global lock (Mops/s) | Sharded (Mops/s) | Speedup |
+|--------:|---------------------:|-----------------:|--------:|
+| 1       | ~15                  | ~13              | 0.8×    |
+| 2       | ~19                  | ~30              | 1.6×    |
+| 4       | ~19                  | ~50              | 2.7×    |
+| 8       | ~19                  | ~80              | 4.1×    |
+
+At one thread the sharding indirection makes it marginally slower; from two threads up the sharded cache pulls ahead and scales close to linearly while the globally-locked cache plateaus. Reproduce with `ParallelCacheBenchmark` in the `SieveCache.Benchmark` project.
 
 ## Benchmark
 

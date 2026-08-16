@@ -28,7 +28,7 @@ public class ParallelCacheBenchmark
         _randomData = GenerateZipfStrings(Capacity * 2, AccessCount);
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void SieveCache_ParallelAccess()
     {
         var cache = new SieveCacheCore(Capacity);
@@ -54,6 +54,33 @@ public class ParallelCacheBenchmark
         _ = cache.Count;
         cache.Clear();
         cache.ResetStats();
+    }
+
+    [Benchmark]
+    public void ShardedSieveCache_ParallelAccess()
+    {
+        var cache = new ShardedSieveCache<string, string>(Capacity);
+
+        Parallel.ForEach(
+            Enumerable.Range(0, _randomData.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = Threads },
+            i =>
+            {
+                var key = _randomData[i];
+                var doesExist = cache.Contains(key);
+                // read/write ratio
+                if (i % 20 == 0) // každá 20. operace = zápis (5 %)
+                {
+                    cache.Put(key, key);
+                }
+                else
+                {
+                    _ = cache.Get(key);
+                }
+            });
+
+        _ = cache.Count;
+        cache.Clear();
     }
 
     /*[Benchmark]
