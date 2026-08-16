@@ -91,16 +91,22 @@ var tuned = new ShardedSieveCache<string, string>(capacity: 10_000, shardCount: 
 
 **Scaling**
 
-Because the write lock in a single global cache serializes every write, a globally-locked SIEVE cache stops scaling after a couple of threads. `ShardedSieveCache` distributes both the lock and the list, so throughput scales with the thread count. Indicative throughput on an 8-core machine (capacity 1000, Zipf workload, 5% writes), against a single globally-locked SIEVE cache:
+A single globally-locked SIEVE cache (here `SieveCacheCore`, guarded by one `ReaderWriterLockSlim`) doesn't just stop scaling — under contention it gets *slower* as threads are added (lock convoy). `ShardedSieveCache` distributes both the lock and the list, so it speeds up as threads are added, up to the core count.
 
-| Threads | Global lock (Mops/s) | Sharded (Mops/s) | Speedup |
-|--------:|---------------------:|-----------------:|--------:|
-| 1       | ~15                  | ~13              | 0.8×    |
-| 2       | ~19                  | ~30              | 1.6×    |
-| 4       | ~19                  | ~50              | 2.7×    |
-| 8       | ~19                  | ~80              | 4.1×    |
+BenchmarkDotNet, Intel Core i7-9700 (8 physical cores), .NET 9, 1,000,000 operations per invocation over a Zipf workload with ~5% writes. Mean time per invocation (lower is better); speedup is baseline ÷ sharded.
 
-At one thread the sharding indirection makes it marginally slower; from two threads up the sharded cache pulls ahead and scales close to linearly while the globally-locked cache plateaus. Reproduce with `ParallelCacheBenchmark` in the `SieveCache.Benchmark` project.
+Capacity 1000:
+
+| Threads | `SieveCacheCore` (global lock) | `ShardedSieveCache` | Speedup |
+|--------:|-------------------------------:|--------------------:|--------:|
+| 1       | 42.4 ms                        | 52.4 ms             | 0.81×   |
+| 2       | 48.4 ms                        | 29.7 ms             | 1.63×   |
+| 4       | 49.6 ms                        | 17.3 ms             | 2.87×   |
+| 8       | 47.6 ms                        | 14.3 ms             | **3.33×** |
+
+Capacity 100 shows the same shape (58.7 ms → 20.6 ms at 8 threads, **2.85×**). At one thread the sharding indirection costs ~15–25%; from two threads up the sharded cache pulls ahead and roughly halves its time each time the thread count doubles, while the globally-locked cache flatlines around 20 Mops/s. The trade-off is ~1.2–1.3× more allocation (extra `ConcurrentDictionary` lock stripes per shard).
+
+Reproduce with `ParallelCacheBenchmark` in the `SieveCache.Benchmark` project (`dotnet run -c Release --project SieveCache.Benchmark`).
 
 ## Benchmark
 
