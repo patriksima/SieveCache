@@ -7,8 +7,8 @@ namespace SieveCache;
 [SimpleJob(launchCount: 1, warmupCount: 3, iterationCount: 5)]
 public class CacheBenchmark
 {
-    [Params(100, 1000)] public int Capacity;
-    [Params(1000, 10000)] public int AccessCount;
+    [Params(1_000)] public int Capacity;
+    [Params(100_000)] public int AccessCount;
 
     private List<string> _randomData = null!;
 

@@ -164,13 +164,13 @@ public class AsyncSieveCacheTests
     }
     
     [Fact]
-    public void ThreadSafety_ShouldNotThrowOrCorruptStateUnderHeavyParallelLoad()
+    public async Task ThreadSafety_ShouldNotThrowOrCorruptStateUnderHeavyParallelLoad()
     {
         var cache = new SieveCacheActor<int, int>(500);
 
         var exceptions = new ConcurrentBag<Exception>();
 
-        Parallel.ForAsync(0, 100_000, async (i, token) => 
+        await Parallel.ForAsync(0, 100_000, async (i, token) =>
         {
             try
             {
@@ -186,5 +186,6 @@ public class AsyncSieveCacheTests
         });
 
         exceptions.Should().BeEmpty();
+        (await cache.CountAsync()).Should().BeLessThanOrEqualTo(500);
     }
 }

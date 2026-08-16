@@ -4,13 +4,23 @@ namespace SieveCache;
 
 [MemoryDiagnoser]
 [RankColumn]
+[ThreadingDiagnoser]
 public class ParallelCacheBenchmark
 {
-    [Params(100, 1000)] public int Capacity;
-    [Params(1000, 10000)] public int AccessCount;
-    [Params(4, 8)] public int ThreadCount;
+    [Params(100, 1_000)] public int Capacity;
+    [Params(99, 1_000_000)] public int AccessCount;
+    [ParamsSource(nameof(ThreadCounts))] public int Threads;
 
+    public static IEnumerable<int> ThreadCounts => GetThreadCounts();
     private List<string> _randomData = null!;
+
+    private static IEnumerable<int> GetThreadCounts()
+    {
+        var coreCount = Environment.ProcessorCount;
+        return Enumerable.Range(1, coreCount).Where(IsPowerOfTwo);
+    }
+
+    private static bool IsPowerOfTwo(int x) => (x & (x - 1)) == 0;
 
     [GlobalSetup]
     public void Setup()
@@ -21,14 +31,17 @@ public class ParallelCacheBenchmark
     [Benchmark]
     public void SieveCache_ParallelAccess()
     {
-        var cache = new SieveCache<string, string>(Capacity);
+        var cache = new SieveCacheCore(Capacity);
 
         Parallel.ForEach(
-            _randomData,
-            new ParallelOptions { MaxDegreeOfParallelism = ThreadCount },
-            key =>
+            Enumerable.Range(0, _randomData.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = Threads },
+            i =>
             {
-                if (!cache.Contains(key))
+                var key = _randomData[i];
+                var doesExist = cache.Contains(key);
+                // read/write ratio
+                if (i % 20 == 0) // každá 20. operace = zápis (5 %)
                 {
                     cache.Put(key, key);
                 }
@@ -37,19 +50,26 @@ public class ParallelCacheBenchmark
                     _ = cache.Get(key);
                 }
             });
+
+        _ = cache.Count;
+        cache.Clear();
+        cache.ResetStats();
     }
 
-    [Benchmark]
+    /*[Benchmark]
     public void LruCache_ParallelAccess()
     {
         var cache = new LruCache<string, string>(Capacity);
 
         Parallel.ForEach(
-            _randomData,
-            new ParallelOptions { MaxDegreeOfParallelism = ThreadCount },
-            key =>
+            Enumerable.Range(0, _randomData.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = Threads },
+            i =>
             {
-                if (!cache.Contains(key))
+                var key = _randomData[i];
+                var doesExist = cache.Contains(key);
+
+                if (i % 5 == 0)
                 {
                     cache.Put(key, key);
                 }
@@ -58,7 +78,7 @@ public class ParallelCacheBenchmark
                     _ = cache.Get(key);
                 }
             });
-    }
+    }*/
 
     private static List<string> GenerateZipfStrings(int uniqueKeyCount, int totalSamples, double exponent = 1.0)
     {

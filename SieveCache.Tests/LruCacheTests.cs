@@ -117,18 +117,4 @@ public class LruCacheTests
 
         cache.Count.Should().Be(2);
     }
-
-    [Fact(Skip = "Not implemented yet")]
-    public void ThreadSafety_LruCache_MultipleThreadsWorkSafely()
-    {
-        var cache = new LruCache<int, int>(capacity: 200);
-
-        Parallel.For(0, 10000, i =>
-        {
-            var key = i % 500;
-            cache.Put(key, i);
-            _ = cache.Get(key);
-            cache.Contains(key);
-        });
-    }
 }
