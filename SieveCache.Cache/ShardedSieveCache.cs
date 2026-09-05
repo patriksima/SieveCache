@@ -15,11 +15,17 @@ namespace SieveCache;
 ///
 /// The shard is chosen by masking a spread hash, so the shard count is a power of two. It is capped
 /// at the capacity (and the core count) so every shard holds at least one entry and the total size
-/// never exceeds <c>capacity</c>.
+/// never exceeds <c>capacity</c>. Because keys are spread by hash, a shard can fill up and evict
+/// while the cache as a whole is still below capacity; the default shard count therefore only
+/// splits caches that give every shard at least <see cref="MinShardCapacity"/> entries, so small
+/// caches behave exactly like a single SIEVE list.
 /// </summary>
 public sealed class ShardedSieveCache<TKey, TValue> : ICache<TKey, TValue>
     where TKey : notnull
 {
+    /// <summary>Smallest per-shard capacity the default shard count will accept.</summary>
+    public const int MinShardCapacity = 8;
+
     private readonly Shard[] _shards;
     private readonly int _mask;
 
@@ -92,7 +98,7 @@ public sealed class ShardedSieveCache<TKey, TValue> : ICache<TKey, TValue>
     }
 
     private static int DefaultShardCount(int capacity)
-        => LargestPowerOfTwoAtMost(Math.Min(Environment.ProcessorCount, capacity));
+        => LargestPowerOfTwoAtMost(Math.Max(1, Math.Min(Environment.ProcessorCount, capacity / MinShardCapacity)));
 
     private static int LargestPowerOfTwoAtMost(int value)
     {
