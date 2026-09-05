@@ -19,6 +19,14 @@ Paper from Yazhuo Zhang, Juncheng Yang, Yao Yue, Ymir Vigfusson, K. V. Rashmi ht
 
 https://cachemon.github.io/SIEVE-website/
 
+## 📦 Installation
+
+```
+dotnet add package PatrikSima.SieveCache
+```
+
+Prebuilt `.nupkg` files are attached to each [GitHub release](https://github.com/patriksima/SieveCache/releases). The root namespace is `SieveCache`.
+
 ## Interface
 
 ```csharp
@@ -85,7 +93,8 @@ cache.Put("a", "apple");
 var value = cache.Get("a");
 bool exists = cache.Contains("a");
 
-// optionally pin the shard count (defaults to a power of two around the core count)
+// optionally pin the shard count (defaults to a power of two around the core count,
+// but never fewer than 8 entries per shard, so small caches stay a single SIEVE list)
 var tuned = new ShardedSieveCache<string, string>(capacity: 10_000, shardCount: 16);
 ```
 

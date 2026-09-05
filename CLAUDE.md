@@ -16,13 +16,13 @@ dotnet test SieveCache.Tests/SieveCache.Tests.csproj --filter "DisplayName~Put_s
 dotnet run --configuration Release --project SieveCache.Benchmark/SieveCache.Benchmark.csproj            # benchmarks
 ```
 
-Tests are xUnit + FluentAssertions. CI (`.github/workflows/dotnet-tests.yml`) runs the test project in Release on push/PR to master. Benchmarks run manually via workflow_dispatch (`benchmark.yml`).
+Tests are xUnit + FluentAssertions. CI (`.github/workflows/dotnet-tests.yml`) runs the test project in Release on push/PR to master. Benchmarks run manually via workflow_dispatch (`benchmark.yml`). Publishing a GitHub release (tag `vX.Y.Z`) triggers `release.yml`, which builds, tests, packs with the version taken from the tag and attaches the `.nupkg`/`.snupkg` to the release; pushing to nuget.org is a commented-out step waiting for a `NUGET_API_KEY` secret. `<Version>` in `SieveCache.Cache.csproj` is only the local fallback — bump it together with the tag.
 
 Benchmarks must be run in Release; BenchmarkDotNet results land in `BenchmarkDotNet.Artifacts/`. `SieveCache.Benchmark/Program.cs` hardcodes which benchmark class runs (`BenchmarkRunner.Run<T>()`) — edit it to switch between `CacheBenchmark` (sequential) and `ParallelCacheBenchmark` (multi-threaded, Zipf workload). Individual implementations are enabled/disabled by commenting `[Benchmark]` methods in and out; this is the established workflow here.
 
 ## Architecture
 
-`SieveCache.Cache` is the library (its `Program.cs` is just a runnable demo). It contains several parallel implementations of the same algorithm, at different points on the simplicity/performance/concurrency spectrum:
+`SieveCache.Cache` is the library, packed as NuGet package `PatrikSima.SieveCache` (plain `SieveCache` is taken on nuget.org by someone else). `SieveCache.Demo` is a tiny console demo referencing it. It contains several parallel implementations of the same algorithm, at different points on the simplicity/performance/concurrency spectrum:
 
 - **`SieveCache<TKey,TValue>`** (`SieveCache.cs`) — canonical reference implementation: `Dictionary` + doubly-linked `Node<TKey,TValue>` list (`Node.cs`). Not thread-safe by design (see README's Thread Safety section — locking is deliberately omitted for performance).
 - **`OptimizedSieveCache<TKey,TValue>`** — allocation-free variant: struct nodes in an `ArrayPool` array, index-based (int) linked list, `Unsafe`/`MemoryMarshal` ref access. `IDisposable` (returns the pooled array). Also not thread-safe.

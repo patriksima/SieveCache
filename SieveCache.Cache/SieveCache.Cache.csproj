@@ -1,14 +1,36 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>SieveCache</RootNamespace>
     </PropertyGroup>
 
+    <PropertyGroup Label="Package">
+        <PackageId>PatrikSima.SieveCache</PackageId>
+        <Version>0.1.0</Version>
+        <Authors>Patrik Sima</Authors>
+        <Description>.NET implementation of the SIEVE cache eviction algorithm (lazy promotion + quick demotion). Ships a reference SieveCache, an allocation-free OptimizedSieveCache and a thread-safe, lock-striped ShardedSieveCache, plus LRU/FIFO baselines.</Description>
+        <PackageTags>cache;sieve;eviction;lru;fifo;concurrent;thread-safe</PackageTags>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/patriksima/SieveCache</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/patriksima/SieveCache</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
     <ItemGroup>
         <InternalsVisibleTo Include="SieveCache.Tests" />
+        <InternalsVisibleTo Include="SieveCache.Demo" />
     </ItemGroup>
 </Project>
